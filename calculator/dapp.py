@@ -2,7 +2,9 @@ from os import environ
 import traceback
 import logging
 import requests
-from py_expression_eval import Parser
+import json
+import base64
+from OpenSSL import crypto
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
@@ -22,22 +24,69 @@ def str2hex(str):
     """
     return "0x" + str.encode("utf-8").hex()
 
+def load_certificate(cert_str):
+    try:
+        # Carrega o certificado a partir da string
+        cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert_str)
+        return cert
+    except Exception as e:
+        logger.error(f"Erro ao carregar o certificado: {e}")
+        return None
+
+def verify_signature(cert, message, signature):
+    try:
+        # Verifica a assinatura usando o certificado
+        crypto.verify(cert, signature, message, "sha256")
+        return True
+    except crypto.Error as e:
+        logger.error(f"Erro ao verificar a assinatura: {e}")
+        return False
+
 def handle_advance(data):
     logger.info(f"Received advance request data {data}")
 
     status = "accept"
     try:
-        input = hex2str(data["payload"])
-        logger.info(f"Received input: {input}")
+        input_data = hex2str(data["payload"])
+        logger.info(f"Received input: {input_data}")
 
-        # Evaluates expression
-        parser = Parser()
-        output = parser.parse(input).evaluate({})
+        # Parse JSON input
+        parsed_data = json.loads(input_data)
+        operation = parsed_data.get("operacao")
+        cert_str = parsed_data.get("certificado")
+        signature_b64 = parsed_data.get("assinatura")
+        message = parsed_data.get("mensagem")
 
-        # Emits notice with result of calculation
-        logger.info(f"Adding notice with payload: '{output}'")
-        response = requests.post(rollup_server + "/notice", json={"payload": str2hex(str(output))})
-        logger.info(f"Received notice status {response.status_code} body {response.content}")
+        if not all([operation, cert_str, signature_b64, message]):
+            raise ValueError("JSON data is missing required fields.")
+
+        # Carrega o certificado
+        cert = load_certificate(cert_str)
+        if not cert:
+            raise ValueError("Failed to load certificate.")
+
+        # Decodifica a assinatura de base64
+        signature = base64.b64decode(signature_b64)
+
+        # Verifica a assinatura
+        if not verify_signature(cert, message.encode('utf-8'), signature):
+            raise ValueError("Invalid signature. Operation rejected.")
+
+        # Executa a operação com base no tipo
+        if operation == "postar_certificado":
+            logger.info("Postando certificado na blockchain...")
+            # Implementar lógica para postar o certificado na blockchain
+            response = requests.post(rollup_server + "/notice", json={"payload": str2hex(f"Certificado postado: {cert_str}")})
+            logger.info(f"Received notice status {response.status_code} body {response.content}")
+
+        elif operation == "revogar_certificado":
+            logger.info("Revogando certificado na blockchain...")
+            # Implementar lógica para revogar o certificado na blockchain
+            response = requests.post(rollup_server + "/notice", json={"payload": str2hex(f"Certificado revogado: {cert_str}")})
+            logger.info(f"Received notice status {response.status_code} body {response.content}")
+
+        else:
+            raise ValueError(f"Operação desconhecida: {operation}")
 
     except Exception as e:
         status = "reject"
