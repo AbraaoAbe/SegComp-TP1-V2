@@ -4,7 +4,9 @@ import logging
 import requests
 import json
 import base64
-from OpenSSL import crypto
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
@@ -26,8 +28,10 @@ def str2hex(str):
 
 def load_certificate(cert_str):
     try:
-        # Carrega o certificado a partir da string
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert_str)
+        # Carrega a chave pública a partir do certificado PEM
+        cert_str = cert_str.replace("-----BEGIN CERTIFICATE-----", "").replace("-----END CERTIFICATE-----", "").replace("\n", "")
+        cert_der = base64.b64decode(cert_str)
+        cert = RSA.import_key(cert_der)
         return cert
     except Exception as e:
         logger.error(f"Erro ao carregar o certificado: {e}")
@@ -35,10 +39,11 @@ def load_certificate(cert_str):
 
 def verify_signature(cert, message, signature):
     try:
-        # Verifica a assinatura usando o certificado
-        crypto.verify(cert, signature, message, "sha256")
+        # Verifica a assinatura usando a chave pública do certificado
+        h = SHA256.new(message)
+        pkcs1_15.new(cert).verify(h, signature)
         return True
-    except crypto.Error as e:
+    except (ValueError, TypeError) as e:
         logger.error(f"Erro ao verificar a assinatura: {e}")
         return False
 

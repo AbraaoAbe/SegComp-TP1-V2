@@ -15,11 +15,7 @@ set -e
 apt-get update
 apt-get install -y --no-install-recommends \
   busybox-static=1:1.30.1-7ubuntu3 \
-  libssl-dev \
-  libffi-dev \
-  python3-pip \
-  python3-setuptools \
-  python3-wheel
+  build-essential 
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/*
 useradd --create-home --user-group dapp
 EOF

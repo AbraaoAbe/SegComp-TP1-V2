@@ -1,6 +1,8 @@
 import json
 import base64
-from OpenSSL import crypto
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
 
 def parse_json_input(json_string):
     try:
@@ -13,8 +15,10 @@ def parse_json_input(json_string):
 
 def load_certificate(cert_str):
     try:
-        # Carrega o certificado a partir da string
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert_str)
+        # Carrega a chave pública a partir do certificado PEM
+        cert_str = cert_str.replace("-----BEGIN CERTIFICATE-----", "").replace("-----END CERTIFICATE-----", "").replace("\n", "")
+        cert_der = base64.b64decode(cert_str)
+        cert = RSA.import_key(cert_der)
         return cert
     except Exception as e:
         print(f"Erro ao carregar o certificado: {e}")
@@ -22,10 +26,11 @@ def load_certificate(cert_str):
 
 def verify_signature(cert, message, signature):
     try:
-        # Verifica a assinatura usando o certificado
-        crypto.verify(cert, signature, message, "sha256")
+        # Verifica a assinatura usando a chave pública do certificado
+        h = SHA256.new(message)
+        pkcs1_15.new(cert).verify(h, signature)
         return True
-    except crypto.Error as e:
+    except (ValueError, TypeError) as e:
         print(f"Erro ao verificar a assinatura: {e}")
         return False
 
@@ -62,6 +67,5 @@ json_string = '''{
     "assinatura": "BcqBptw3BmOwJmlf3NkzlpX/uB+LL2Lqd3ur12fKBLiYEpiUFQiyaUruhHcRh0tPAtNQdkGfN9DC\\n7d+JldUGRgohADhklM6Pi/YhanJLD5DO/fpfHWC/PlBHDr4T3Ttwjf40UV1//4E6h4iruaO9jUAb\\nJkpTxXFgVdRGAbA4sTWQx0/Bj/7x3kS7t2CL3ROIog1+0ZJQAJuJsUHjV1b1S8ox4I84NCO3Oz/y\\n1lFztNFvoK3cLpee+NkV2k2f9kcxV8Qi1MPN+PJW+g1a55uL8iVKvTGtjhXGdGl9d0NfEeCmnWXE\\nAyBxwViB9ty8OQX5ha/EEIYRpewZtjiwC+S+aw==",
     "status": true
 }'''
-
 
 main(json_string)
