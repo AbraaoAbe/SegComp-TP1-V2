@@ -2,6 +2,8 @@
 
 # Defina suas variáveis
 INPUT_PATH_FILES="./INPUT"
+# INPUT_PATH_FILES="./INPUT_FORCE_REJECT" # Descomente essa linha para testar o envio de assinatura inválida
+
 DAPP_ADDRESS="0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e"
 CHAIN_ID="31337" # Exemplo: Foundry
 RPC_URL="http://127.0.0.1:8545"

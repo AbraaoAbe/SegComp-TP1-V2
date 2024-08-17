@@ -74,7 +74,7 @@
 
     Se tudo der certo você verá uma saida no terminal parecida com essa aqui:
 
-    {imagem do terminal}
+    ![Terminal depois de enviado o certificado](img/terminal_finish.png)
 
 4. **Utilize o inspect através do frontend**: Para fazer isso, rode o `app.js` encontrado dentro do diretório `/front-end` através do seguinte comando:
 
@@ -82,4 +82,11 @@
     node ./front-end/app.js
     ```
 
-## Fasds
+## Inputs tratados
+
+
+1. **Reenviar o mesmo certificado, com a mesma mensagem e assinatura**: Você irá vê na tela de log a mensagem `The certificate was already posted.`, informando que o certificado que o certificado ja foi postado.
+
+2. **Enviar um certificado revogado, com a mesma mensagem e assinatura**: Você verá a mesma mensagem explicada no 1.
+
+3. **E claro, o mais importante, a verificação da assinatura**: Para testar a falha de verificação, você deve acessar o arquivo `send_generic.sh` e descomentar a linha `5` e comentar a linha `4`. A partir disso é so executar o script `send_generic.sh` novamente, passando o 1 como parâmetro.

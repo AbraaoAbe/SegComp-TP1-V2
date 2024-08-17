@@ -75,7 +75,7 @@ def handle_advance(data):
     status = "accept"
     try:
         input_data = hex2str(data["payload"])
-        logger.info(f"Received input: {input_data}")
+        # logger.info(f"Received input: {input_data}")
 
         # Parse JSON input
         parsed_data = json.loads(input_data)
@@ -83,7 +83,7 @@ def handle_advance(data):
         cert_str = parsed_data.get("certificado")
         signature_b64 = parsed_data.get("assinatura")
         message = parsed_data.get("mensagem")
-        flag = parsed_data.get("flag")
+        flag = True
 
         if not all([operation, cert_str, signature_b64, message, flag]):
             raise ValueError("JSON data is missing required fields.")
@@ -98,6 +98,10 @@ def handle_advance(data):
 
         # Verifica a assinatura
         if not verify_signature(cert, message.encode('utf-8'), signature):
+            status = "reject"
+            logger.info("Signature verification failed.")
+            logger.info("Operation rejected.")
+            return status
             raise ValueError("Invalid signature. Operation rejected.")
         else:
             logger.info("Signature verified.")
@@ -106,7 +110,7 @@ def handle_advance(data):
         if operation == "postar_certificado":
             logger.info("Verifing if the certificate was already posted...")
             
-            # Carrega certificados existentes
+            # Carrega certificados locais
             certificates = load_certificates_from_file()
             
             # Verifica se o identificador já existe
@@ -115,21 +119,18 @@ def handle_advance(data):
             else:
                 logger.info("Posting the certificate...")
                 
-                # Estrutura JSON para enviar para a blockchain
                 payload = {"message": message, "cert_str": cert_str, "flag": flag}
                 response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
                 
                 logger.info(f"Received notice status {response.status_code} body {response.content}")
                 
                 # Atualiza o arquivo local com o novo certificado
-                logger.info(f"Updating certificates file:{certificates}")
                 certificates[message] = {"cert_str": cert_str, "flag": flag}
-                logger.info(f"Certificates file updated:{certificates}")
                 save_certificates_to_file(certificates)
 
         elif operation == "revogar_certificado":
             logger.info("Revoking the certificate...")
-            # Carrega certificados existentes
+
             certificates = load_certificates_from_file()
             
             # Verifica se o identificador existe
@@ -139,8 +140,6 @@ def handle_advance(data):
                 
                 # Salva a alteração no arquivo local
                 save_certificates_to_file(certificates)
-                
-                # Estrutura JSON para enviar para a blockchain
                 payload = {"message": message, "cert_str": certificates[message]['cert_str'], "flag": False}
                 response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
                 
@@ -149,11 +148,11 @@ def handle_advance(data):
                 logger.info("The certificate was not found for revocation.")
 
         else:
-            raise ValueError(f"Operação desconhecida: {operation}")
+            raise ValueError(f"Invalid operation: {operation}")
 
     except Exception as e:
         status = "reject"
-        msg = f"Error processing data {data}\n{traceback.format_exc()}"
+        msg = f"Error processing data {e}"
         logger.error(msg)
         response = requests.post(rollup_server + "/report", json={"payload": str2hex(msg)})
         logger.info(f"Received report status {response.status_code} body {response.content}")
@@ -168,39 +167,37 @@ def handle_inspect(data):
         input_data = hex2str(data["payload"])
         logger.info(f"Received input: {input_data}")
 
-        # Parse JSON input
-        parsed_data = json.loads(input_data)
-        message = parsed_data.get("mensagem")
-
-        if not message:
+        if not input_data:
             response_message = "Error: No message provided"
             logger.error(response_message)
             # Envia o erro para o endpoint /report
-            response = requests.post(rollup_server + "/report", json={"payload": response_message})
+            response = requests.post(rollup_server + "/report", json={"payload": str2hex(response_message)})
             logger.info(f"Received report status {response.status_code}")
-            return response_message
+            return 'reject'
 
-        # Carrega os certificados do arquivo
         certificates = load_certificates_from_file()
 
         # Verifica se a message existe no dicionário de certificados
-        if message in certificates:
-            cert_info = certificates[message]
-            response_message = f"Certificado encontrado: {cert_info}"
+        if input_data in certificates:
+            cert_info = certificates[input_data]
+            if not cert_info['flag']:
+                logger.info("The certificate was revoked!!")
+                return 'reject'
+            logger.info(f"a flag é: {cert_info['flag']}")
         else:
-            response_message = "Certificado não encontrado"
+            logger.info("The certificate was not found!!")
 
-        logger.info(response_message)
+        # logger.info(response_message)
         # Envia a resposta para o endpoint /report
-        response = requests.post(rollup_server + "/report", json={"payload": response_message})
+        response = requests.post(rollup_server + "/report", json={"payload": str2hex(json.dumps(cert_info))})
         logger.info(f"Received report status {response.status_code}")
         
     except Exception as e:
-        error_message = f"Erro ao processar a solicitação: {e}"
-        logger.error(error_message)
+        msg = f"Error processing data {e}"
+        logger.error(msg)
         # Envia o erro para o endpoint /report
-        response = requests.post(rollup_server + "/report", json={"payload": error_message})
-        logger.info(f"Received report status {response.status_code}")
+        response = requests.post(rollup_server + "/report", json={"payload": str2hex(msg)})
+        logger.info(f"Received report status {response.status_code} body {response.content}")
     return "accept"
 
 handlers = {

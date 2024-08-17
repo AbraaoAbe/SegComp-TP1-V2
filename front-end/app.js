@@ -1,5 +1,5 @@
 const fs = require('fs');
-const message_path = '../message.txt';
+const message_path = './INPUT/message.txt';
 
 const fetchNotices = async () => {
   try {
@@ -11,14 +11,13 @@ const fetchNotices = async () => {
       }
 
       // Crie a URL baseada no conteúdo do arquivo
-      const url = `http://localhost:8080/graphql/${encodeURIComponent(message)}`;
+      const url = `http://localhost:8080/inspect/${encodeURIComponent(message)}`;
       console.log(`Fetching from URL: ${url}`);
 
       // Faça o fetch para a URL criada
       const response = await fetch(url, {
-        method: 'POST',
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: "{ notices { edges { node { payload } } } }" }),
       });
 
       // Verifica se a resposta foi bem-sucedida
@@ -28,28 +27,27 @@ const fetchNotices = async () => {
 
       const result = await response.json();
 
-      // Verifica se a resposta contém a estrutura esperada
-      if (result.data && result.data.notices && result.data.notices.edges) {
-        for (const edge of result.data.notices.edges) {
-          const payload = edge.node.payload;
-          // Converte hexadecimal para bytes e depois para string
-          try {
-            const hexStringWithoutPrefix = payload.startsWith('0x') ? payload.slice(2) : payload;
-            const bytes = Buffer.from(hexStringWithoutPrefix, 'hex');
-            const decodedString = bytes.toString('utf8');
-            console.log(decodedString);
-          } catch (error) {
-            console.error('Erro ao decodificar a string hexadecimal:', error);
-          }
-          
-          // Exibe o payload
-        }
+      // Verifica se a resposta contém os dados esperados
+      if (result.reports && result.reports.length > 0) {
+        // Processa o primeiro relatório (ou itere sobre todos se necessário)
+        const report = result.reports[0];
+        const payloadHex = report.payload;
+
+        // Remove o prefixo '0x' se presente
+        const hexStringWithoutPrefix = payloadHex.startsWith('0x') ? payloadHex.slice(2) : payloadHex;
+
+        // Converte hexadecimal para bytes
+        const bytes = Buffer.from(hexStringWithoutPrefix, 'hex');
+        const decodedString = bytes.toString('utf8');
+
+        // Exibe a mensagem decodificada
+        console.log('Certificado Encontrado:', decodedString);
       } else {
-        console.error('Unexpected response structure:', result);
+        console.log('Nenhum certificado encontrado.');
       }
     });
   } catch (error) {
-    console.error('Error fetching notices:', error);
+    console.error('Erro ao buscar dados:', error);
   }
 };
 
