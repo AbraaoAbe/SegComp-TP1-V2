@@ -16,7 +16,7 @@ base64 assinatura.bin > "$OUTPUT_FILE"
 
 # Exibir a assinatura gerada
 echo "Assinatura gerada (Base64):"
-cat assinatura_base64.txt
+cat ./INPUT/assinatura_base64.txt
 
 # Limpeza dos arquivos temporários (opcional)
 rm assinatura.bin

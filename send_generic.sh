@@ -14,6 +14,7 @@ read OPERATION
 # Verifica a escolha do usuário
 if [ "$OPERATION" -eq 1 ]; then
   OPERATION_TYPE="postar_certificado"
+
 elif [ "$OPERATION" -eq 2 ]; then
   OPERATION_TYPE="revogar_certificado"
 else
@@ -27,9 +28,9 @@ MESSAGE=$(cat ${INPUT_PATH_FILES}/message.txt)
 SIGNATURE=$(cat ${INPUT_PATH_FILES}/assinatura_base64.txt) 
 
 # Exibe os dados carregados
-echo "Certificate: $CERTIFICATE"
-echo "Message: $MESSAGE"
-echo "Signature: $SIGNATURE"
+# echo "Certificate: $CERTIFICATE"
+# echo "Message: $MESSAGE"
+# echo "Signature: $SIGNATURE"
 
 # Cria a string de entrada JSON
 INPUT_STRING=$(jq -n \
@@ -44,14 +45,14 @@ INPUT_STRING=$(jq -n \
     assinatura: $assinatura
   }')
 
-# Exibe a string JSON criada
-echo "Input JSON: $INPUT_STRING"
+# Exibe a string JSON criada (para debug)
+# echo "Input JSON: $INPUT_STRING"
 
 # Envia o comando Cartesi
-# cartesi send generic \
-#   --dapp "$DAPP_ADDRESS" \
-#   -c "$CHAIN_ID" \
-#   -r "$RPC_URL" \
-#   --mnemonic-passphrase "$MNEMONIC" \
-#   --input-encoding "string" \
-#   --input "$INPUT_STRING"
+cartesi send generic \
+  --dapp "$DAPP_ADDRESS" \
+  -c "$CHAIN_ID" \
+  -r "$RPC_URL" \
+  --mnemonic-passphrase "$MNEMONIC" \
+  --input-encoding "string" \
+  --input "$INPUT_STRING"

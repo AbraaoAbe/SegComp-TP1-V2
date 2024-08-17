@@ -22,7 +22,7 @@
    Para gerar a chave privada, utilize o seguinte comando OpenSSL:
 
     ```bash
-    openssl genpkey -algorithm RSA -out /PK/private.key
+    openssl genpkey -algorithm RSA -out ./PK/private.key
     ```
 
 2. **Mensagem para Assinatura**: Coloque uma mensagem sem espaços no arquivo localizado em `/INPUT/message.txt`. Exemplo de mensagem:
@@ -60,18 +60,26 @@
     cartesi build
     cartesi run
     ```
-
+    Essa parte pode demorar um pouco.
 2. **Teste**:
    
-   Abra um novo terminal e execute o script `send_generic.sh` para testar o sistema.
+   Quando o Cartesi estiver rodando abra um novo terminal e execute o script `send_generic.sh` para testar o sistema.
 
     ```bash
     ./send_generic.sh
     ```
+    Utilize a opção 1 para postar o certificad e a opção 2 para revogar o certificado.
+
 3. **Observe a movimentação da dApp pelo LOG do cartesi**
 
     Se tudo der certo você verá uma saida no terminal parecida com essa aqui:
 
     {imagem do terminal}
 
-## F
+4. **Utilize o inspect através do frontend**: Para fazer isso, rode o `app.js` encontrado dentro do diretório `/front-end` através do seguinte comando:
+
+    ```bash
+    node ./front-end/app.js
+    ```
+
+## Fasds
