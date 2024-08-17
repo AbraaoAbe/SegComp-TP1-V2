@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define o nome do arquivo da chave privada existente
-PRIVATE_KEY="private.key"
+PRIVATE_KEY="./PK/private.key"
 
 # Verifica se o arquivo da chave privada existe
 if [ ! -f "$PRIVATE_KEY" ]; then
@@ -13,7 +13,7 @@ fi
 CSR_FILE="certificate.csr"
 
 # Define o nome do arquivo de saída para o certificado assinado
-CERT_FILE="certificate.crt"
+CERT_FILE="./INPUT/certificate.crt"
 
 # Define a quantidade de dias que o certificado será válido
 VALIDITY_DAYS=365
@@ -32,3 +32,6 @@ openssl x509 -in "$CERT_FILE" -text -noout
 
 # Exibe o caminho completo do certificado gerado
 echo "O certificado foi salvo em: $(pwd)/$CERT_FILE"
+
+# Limpeza dos arquivos temporários (opcional)
+rm "$CSR_FILE"

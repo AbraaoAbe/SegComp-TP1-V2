@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Nome do arquivo contendo a mensagem a ser criptografada
-INPUT_FILE="message.txt"
+INPUT_FILE="./INPUT/message.txt"
 
 # Nome do arquivo da chave privada
-PRIVATE_KEY="private.key"
+PRIVATE_KEY="./PK/private.key"
 
-OUTPUT_FILE="assinatura_base64.txt"
+OUTPUT_FILE="./INPUT/assinatura_base64.txt"
 
 # Gerar a assinatura usando a chave privada
 openssl dgst -sha256 -sign "$PRIVATE_KEY" -out assinatura.bin "$INPUT_FILE"

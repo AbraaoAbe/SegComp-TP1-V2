@@ -162,9 +162,45 @@ def handle_advance(data):
 
 def handle_inspect(data):
     logger.info(f"Received inspect request data {data}")
-    logger.info("Adding report")
-    response = requests.post(rollup_server + "/report", json={"payload": data["payload"]})
-    logger.info(f"Received report status {response.status_code}")
+
+    try:
+        # Converte o payload hexadecimal para string
+        input_data = hex2str(data["payload"])
+        logger.info(f"Received input: {input_data}")
+
+        # Parse JSON input
+        parsed_data = json.loads(input_data)
+        message = parsed_data.get("mensagem")
+
+        if not message:
+            response_message = "Error: No message provided"
+            logger.error(response_message)
+            # Envia o erro para o endpoint /report
+            response = requests.post(rollup_server + "/report", json={"payload": response_message})
+            logger.info(f"Received report status {response.status_code}")
+            return response_message
+
+        # Carrega os certificados do arquivo
+        certificates = load_certificates_from_file()
+
+        # Verifica se a message existe no dicionário de certificados
+        if message in certificates:
+            cert_info = certificates[message]
+            response_message = f"Certificado encontrado: {cert_info}"
+        else:
+            response_message = "Certificado não encontrado"
+
+        logger.info(response_message)
+        # Envia a resposta para o endpoint /report
+        response = requests.post(rollup_server + "/report", json={"payload": response_message})
+        logger.info(f"Received report status {response.status_code}")
+        
+    except Exception as e:
+        error_message = f"Erro ao processar a solicitação: {e}"
+        logger.error(error_message)
+        # Envia o erro para o endpoint /report
+        response = requests.post(rollup_server + "/report", json={"payload": error_message})
+        logger.info(f"Received report status {response.status_code}")
     return "accept"
 
 handlers = {
