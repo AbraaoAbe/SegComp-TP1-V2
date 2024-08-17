@@ -9,8 +9,15 @@
     ```bash
     sudo apt install openssl
     ```
+3. **jq**: O shell script irá precisar para concatenar os arquivos de entrada em formato json. Caso não tenha utilize o seguinte comando:
+    
+    ```bash
+    sudo apt install jq
+    ```
 
-3. **Chave Privada**: Coloque a chave privada `private.key` dentro do diretório `/PK`.
+## Preparando o ambiente
+
+1. **Geração da Chave Privada**: Coloque sua chave privada `private.key` dentro do diretório `/PK`.
 
    Para gerar a chave privada, utilize o seguinte comando OpenSSL:
 
@@ -18,7 +25,7 @@
     openssl genpkey -algorithm RSA -out /PK/private.key
     ```
 
-4. **Mensagem de Teste**: Coloque uma mensagem sem espaços no arquivo localizado em `/INPUT/message.txt`. Exemplo de mensagem:
+2. **Mensagem para Assinatura**: Coloque uma mensagem sem espaços no arquivo localizado em `/INPUT/message.txt`. Exemplo de mensagem:
 
     ```
     uma_mensagem_qualquer
@@ -34,15 +41,15 @@
     ./certificate_gen.sh
     ```
 
-2. **Geração da Assinatura**:
+2. **Geração da Mensagem Assinada**:
    
-   Execute o script `signature_gen.sh` para gerar a assinatura necessária para verificação.
+   Execute o script `signature_gen.sh` para gerar a assinatura necessária para verificação dentro da dApp.
 
     ```bash
     ./signature_gen.sh
     ```
 
-## Execução do Cartesi
+## Execução e Teste
 
 1. **Construção e Execução**:
    
@@ -61,3 +68,10 @@
     ```bash
     ./send_generic.sh
     ```
+3. **Observe a movimentação da dApp pelo LOG do cartesi**
+
+    Se tudo der certo você verá uma saida no terminal parecida com essa aqui:
+
+    {imagem do terminal}
+
+## F
