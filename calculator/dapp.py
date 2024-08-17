@@ -1,4 +1,5 @@
 from os import environ
+import os
 import traceback
 import logging
 import requests
@@ -47,6 +48,27 @@ def verify_signature(cert, message, signature):
         logger.error(f"Erro ao verificar a assinatura: {e}")
         return False
 
+# Define o caminho do arquivo onde os certificados serão armazenados
+certificates_file = "certificates.json"
+
+# Função para carregar certificados existentes
+def load_certificates_from_file():
+    if os.path.exists(certificates_file) and os.path.getsize(certificates_file) > 0:
+        with open(certificates_file, "r") as file:
+            try:
+                return json.load(file)
+            except json.JSONDecodeError as e:
+                logger.error(f"Erro ao decodificar JSON: {e}")
+                return {}
+    else:
+        # Retorna um dicionário vazio se o arquivo não existir ou estiver vazio
+        return {}
+
+# Função para salvar certificados
+def save_certificates_to_file(certificates):
+    with open(certificates_file, "w") as file:
+        json.dump(certificates, file, indent=4)
+
 def handle_advance(data):
     logger.info(f"Received advance request data {data}")
 
@@ -61,8 +83,9 @@ def handle_advance(data):
         cert_str = parsed_data.get("certificado")
         signature_b64 = parsed_data.get("assinatura")
         message = parsed_data.get("mensagem")
+        flag = parsed_data.get("flag")
 
-        if not all([operation, cert_str, signature_b64, message]):
+        if not all([operation, cert_str, signature_b64, message, flag]):
             raise ValueError("JSON data is missing required fields.")
 
         # Carrega o certificado
@@ -76,19 +99,54 @@ def handle_advance(data):
         # Verifica a assinatura
         if not verify_signature(cert, message.encode('utf-8'), signature):
             raise ValueError("Invalid signature. Operation rejected.")
+        else:
+            logger.info("Signature verified.")
 
         # Executa a operação com base no tipo
         if operation == "postar_certificado":
-            logger.info("Postando certificado na blockchain...")
-            # Implementar lógica para postar o certificado na blockchain
-            response = requests.post(rollup_server + "/notice", json={"payload": str2hex(f"Certificado postado: {cert_str}")})
-            logger.info(f"Received notice status {response.status_code} body {response.content}")
+            logger.info("Verifing if the certificate was already posted...")
+            
+            # Carrega certificados existentes
+            certificates = load_certificates_from_file()
+            
+            # Verifica se o identificador já existe
+            if message in certificates:
+                logger.info("The certificate was already posted.")
+            else:
+                logger.info("Posting the certificate...")
+                
+                # Estrutura JSON para enviar para a blockchain
+                payload = {"message": message, "cert_str": cert_str, "flag": flag}
+                response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
+                
+                logger.info(f"Received notice status {response.status_code} body {response.content}")
+                
+                # Atualiza o arquivo local com o novo certificado
+                logger.info(f"Updating certificates file:{certificates}")
+                certificates[message] = {"cert_str": cert_str, "flag": flag}
+                logger.info(f"Certificates file updated:{certificates}")
+                save_certificates_to_file(certificates)
 
         elif operation == "revogar_certificado":
-            logger.info("Revogando certificado na blockchain...")
-            # Implementar lógica para revogar o certificado na blockchain
-            response = requests.post(rollup_server + "/notice", json={"payload": str2hex(f"Certificado revogado: {cert_str}")})
-            logger.info(f"Received notice status {response.status_code} body {response.content}")
+            logger.info("Revoking the certificate...")
+            # Carrega certificados existentes
+            certificates = load_certificates_from_file()
+            
+            # Verifica se o identificador existe
+            if message in certificates:
+                # Atualiza o flag do certificado para false
+                certificates[message]['flag'] = False
+                
+                # Salva a alteração no arquivo local
+                save_certificates_to_file(certificates)
+                
+                # Estrutura JSON para enviar para a blockchain
+                payload = {"message": message, "cert_str": certificates[message]['cert_str'], "flag": False}
+                response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
+                
+                logger.info(f"Received notice status {response.status_code} body {response.content}")
+            else:
+                logger.info("The certificate was not found for revocation.")
 
         else:
             raise ValueError(f"Operação desconhecida: {operation}")
@@ -119,12 +177,22 @@ finish = {"status": "accept"}
 while True:
     logger.info("Sending finish")
     response = requests.post(rollup_server + "/finish", json=finish)
+    logger.info(f"Received response: {response}")
     logger.info(f"Received finish status {response.status_code}")
+
+    # Verifique o conteúdo da resposta
+    logger.info(f"Response content: {response.text}")
+
     if response.status_code == 202:
         logger.info("No pending rollup request, trying again")
     else:
-        rollup_request = response.json()
-        data = rollup_request["data"]
-
-        handler = handlers[rollup_request["request_type"]]
-        finish["status"] = handler(rollup_request["data"])
+        try:
+            rollup_request = response.json()
+            logger.info(f"Received rollup request: {rollup_request}")
+            data = rollup_request["data"]
+            logger.info(f"Rollup request data: {data}")
+            handler = handlers[rollup_request["request_type"]]
+            finish["status"] = handler(rollup_request["data"])
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON: {e}")
+            break

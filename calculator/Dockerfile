@@ -24,6 +24,7 @@ ENV PATH="/opt/cartesi/bin:${PATH}"
 
 WORKDIR /opt/cartesi/dapp
 COPY ./requirements.txt .
+COPY ./certificates.json .
 
 RUN <<EOF
 set -e
