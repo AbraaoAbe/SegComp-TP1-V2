@@ -1,4 +1,7 @@
-# Trabalho Prático de Faculdade
+# Trabalho Prático Segurança em Computação
+
+Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e JavaScript para o front-end. Além disso, foram empregados scripts em Shell para facilitar o tratamento e envio dos dados, tornando o processo mais simples e automatizado.
+
 
 ## Requisitos
 
@@ -31,7 +34,7 @@
     uma_mensagem_qualquer
     ```
 
-## Scripts
+### Scripts
 
 1. **Geração e Assinatura do Certificado**:
    
@@ -60,7 +63,7 @@
     cartesi build
     cartesi run
     ```
-    Essa parte pode demorar um pouco.
+    - OBS.: Essa parte pode demorar um pouco, ou até dar alguns erros dependendo da sua CPU, tenha paciência e repita os comandos. Tente fechar e abrir sua IDE e/ou terminais novamente.
 2. **Teste**:
    
    Quando o Cartesi estiver rodando abra um novo terminal e execute o script `send_generic.sh` para testar o sistema.
@@ -90,3 +93,7 @@
 2. **Enviar um certificado revogado, com a mesma mensagem e assinatura**: Você verá a mesma mensagem explicada no 1.
 
 3. **E claro, o mais importante, a verificação da assinatura**: Para testar a falha de verificação, você deve acessar o arquivo `send_generic.sh` e descomentar a linha `5` e comentar a linha `4`. A partir disso é so executar o script `send_generic.sh` novamente, passando o 1 como parâmetro.
+
+## Link do vídeo
+
+https://drive.google.com/file/d/10pOpFLrWHcnANOSRPVpoHsDK8cdvK2BX/view?usp=sharing
