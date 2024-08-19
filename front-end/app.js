@@ -3,18 +3,18 @@ const message_path = './INPUT/message.txt';
 
 const fetchNotices = async () => {
   try {
-    // Leia o conteúdo do arquivo message.txt
+    // Le o conteúdo do arquivo message.txt
     fs.readFile(message_path, 'utf8', async (err, message) => {
       if (err) {
         console.error('Erro ao ler o arquivo message.txt:', err);
         return;
       }
 
-      // Crie a URL baseada no conteúdo do arquivo
+      // Cria a URL baseada no conteúdo do arquivo
       const url = `http://localhost:8080/inspect/${encodeURIComponent(message)}`;
       console.log(`Fetching from URL: ${url}`);
 
-      // Faça o fetch para a URL criada
+      // Faz o fetch para a URL criada
       const response = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
@@ -51,5 +51,4 @@ const fetchNotices = async () => {
   }
 };
 
-// Executa a função
 fetchNotices();
