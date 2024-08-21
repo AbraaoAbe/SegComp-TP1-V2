@@ -3,18 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de certificado</title>
+    <title>Gerador de Certificado</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            display: inline-block;
+        }
+        .header a.active {
+            background-color: #555;
         }
         .container {
             text-align: center;
+            padding: 20px;
         }
         input[type="text"], input[type="file"] {
             margin: 10px 0;
@@ -25,66 +38,150 @@
             padding: 10px 20px;
             font-size: 16px;
         }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Gerador de certificado e assinatura</h1>
-        <input type="text" id="textInput" placeholder="Digite a mensagem que sera indexada ao certificado">
+    <div class="header">
+        <a href="#" onclick="showPage('generate')" class="active">Gerar Certificado</a>
+        <a href="#" onclick="showPage('revoke')">Revogar Certificado</a>
+        <a href="#" onclick="showPage('view')">Ver Certificado</a>
+    </div>
+
+    <div id="generate" class="container page active">
+        <h1>Gerador de Certificado e Assinatura</h1>
+        <input type="text" id="textInput" placeholder="Digite a mensagem que será indexada ao certificado">
         <br>
         <input type="file" id="fileInput" accept=".key">
         <br>
         <button onclick="handleUpload()">Enviar</button>
     </div>
 
+    <div id="revoke" class="container page">
+        <h1>Revogar Certificado</h1>
+        <input type="text" id="certId" placeholder="Digite o ID do certificado a ser revogado">
+        <br>
+        <button onclick="handleRevoke()">Revogar</button>
+    </div>
+
+    <div id="view" class="container page">
+        <h1>Ver Certificado</h1>
+        <input type="text" id="certSearch" placeholder="Digite o ID do certificado para visualizar">
+        <br>
+        <button onclick="handleView()">Buscar</button>
+        <div id="certDetails"></div>
+    </div>
+
     <script>
-              function handleUpload() {
-          const textInput = document.getElementById('textInput').value;
-          const fileInput = document.getElementById('fileInput').files[0];
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.querySelectorAll('.header a').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            document.querySelector(`.header a[onclick="showPage('${pageId}')"]`).classList.add('active');
+        }
 
-          if (fileInput) {
-              const reader = new FileReader();
+        function handleUpload() {
+            const textInput = document.getElementById('textInput').value;
+            const fileInput = document.getElementById('fileInput').files[0];
 
-              reader.onload = function(event) {
-                  const fileContent = event.target.result;
-                  console.log("Texto do input:", textInput);
-                  console.log("Conteúdo do arquivo:", fileContent);
+            if (fileInput) {
+                const reader = new FileReader();
 
-                  // Enviar dados para o servidor node local
-                  fetch('/generate', {
-                      method: 'POST',
-                      headers: {
-                          'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({
-                          textInput: textInput,
-                          fileContent: fileContent
-                      })
-                  }).then(response => {
+                reader.onload = function(event) {
+                    const fileContent = event.target.result;
+                    console.log("Texto do input:", textInput);
+                    console.log("Conteúdo do arquivo:", fileContent);
+
+                    fetch('/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            textInput: textInput,
+                            fileContent: fileContent
+                        })
+                    }).then(response => {
                         if (!response.ok) {
-                            // Se a resposta não for bem-sucedida, lançar um erro com o status
                             return response.text().then(text => {
                                 throw new Error(`Error ${response.status}: ${text}`);
                             });
                         }
-                        return response.text(); // Continuar se a resposta for bem-sucedida
+                        return response.text();
                     })
                     .then(result => {
                         console.log(result);
-                        alert('A operação foi realizada com sucesso!'); 
+                        alert('A operação foi realizada com sucesso!');
                     })
                     .catch(error => {
                         console.error('Erro:', error);
-                        alert(`Ocorreu um erro: ${error.message}`); 
+                        alert(`Ocorreu um erro: ${error.message}`);
                     });
-              };
+                };
 
-              reader.readAsText(fileInput);
-          } else {
-              console.log("Nenhum arquivo selecionado.");
-          }
-      }
+                reader.readAsText(fileInput);
+            } else {
+                console.log("Nenhum arquivo selecionado.");
+            }
+        }
 
+        function handleRevoke() {
+            const certId = document.getElementById('certId').value;
+
+            fetch('/revoke', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ certId: certId })
+            }).then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`Error ${response.status}: ${text}`);
+                    });
+                }
+                return response.text();
+            })
+            .then(result => {
+                console.log(result);
+                alert('Certificado revogado com sucesso!');
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert(`Ocorreu um erro: ${error.message}`);
+            });
+        }
+
+        function handleView() {
+            const certSearch = document.getElementById('certSearch').value;
+
+            fetch(`/view?certId=${encodeURIComponent(certSearch)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`Error ${response.status}: ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    const certDetails = document.getElementById('certDetails');
+                    certDetails.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert(`Ocorreu um erro: ${error.message}`);
+                });
+        }
     </script>
 </body>
 </html>
