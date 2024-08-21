@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de certificado</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+        }
+        input[type="text"], input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerador de certificado e assinatura</h1>
+        <input type="text" id="textInput" placeholder="Digite a mensagem que sera indexada ao certificado">
+        <br>
+        <input type="file" id="fileInput" accept=".key">
+        <br>
+        <button onclick="handleUpload()">Enviar</button>
+    </div>
+
+    <script>
+              function handleUpload() {
+          const textInput = document.getElementById('textInput').value;
+          const fileInput = document.getElementById('fileInput').files[0];
+
+          if (fileInput) {
+              const reader = new FileReader();
+
+              reader.onload = function(event) {
+                  const fileContent = event.target.result;
+                  console.log("Texto do input:", textInput);
+                  console.log("Conteúdo do arquivo:", fileContent);
+
+                  // Enviar dados para o servidor node local
+                  fetch('/generate', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                          textInput: textInput,
+                          fileContent: fileContent
+                      })
+                  }).then(response => {
+                        if (!response.ok) {
+                            // Se a resposta não for bem-sucedida, lançar um erro com o status
+                            return response.text().then(text => {
+                                throw new Error(`Error ${response.status}: ${text}`);
+                            });
+                        }
+                        return response.text(); // Continuar se a resposta for bem-sucedida
+                    })
+                    .then(result => {
+                        console.log(result);
+                        alert('A operação foi realizada com sucesso!'); 
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert(`Ocorreu um erro: ${error.message}`); 
+                    });
+              };
+
+              reader.readAsText(fileInput);
+          } else {
+              console.log("Nenhum arquivo selecionado.");
+          }
+      }
+
+    </script>
+</body>
+</html>

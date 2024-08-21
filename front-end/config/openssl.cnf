@@ -1,0 +1,22 @@
+[ req ]
+default_bits        = 2048
+default_keyfile     = key.pem
+distinguished_name  = req_distinguished_name
+req_extensions      = req_ext
+prompt = no
+
+[ req_distinguished_name ]
+countryName                 = US
+stateOrProvinceName         = California
+localityName                = San Francisco
+organizationName            = MyCompany
+organizationalUnitName      = IT
+commonName                  = www.example.com
+emailAddress                = email@example.com
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = www.example.com
+DNS.2 = example.com
