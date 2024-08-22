@@ -100,18 +100,19 @@ def handle_advance(data):
             # Verifica se o identificador da mensagem existe nos certificados
             if message in certificates:
                 certificate_data = certificates[message]
-                logger.info(f"Certificate data: {certificate_data}")
-                # Verifica se a chave 'cert' existe no dicionário de dados do certificado
-                if 'cert' in certificate_data:
-                    certificate = certificate_data['cert']
-                    logger.info(f"Certificate: {certificate}")
-                    # Verifica a assinatura
-                    if not verify_signature(certificate, message.encode('utf-8'), signature):
-                        status = "reject"
-                        logger.info("Signature verification failed.")
-                        logger.info("Operation rejected.")
-                        return status
-                    else:
+                # logger.info(f"Certificate data: {certificate_data}")
+                
+                certificate = certificate_data['cert_str']
+                cert_loaded = load_certificate(certificate)
+                # logger.info(f"Certificate: {certificate}")
+                # Verifica a assinatura
+                if not verify_signature(cert_loaded, message.encode('utf-8'), signature):
+                    status = "reject"
+                    logger.info("Signature verification failed.")
+                    logger.info("Operation rejected.")
+                    return status
+                else:
+                    if flag != certificate_data['flag']:
                         # Atualiza o flag do certificado para false
                         certificates[message]['flag'] = flag
                         
@@ -119,14 +120,16 @@ def handle_advance(data):
                         save_certificates_to_file(certificates)
                         
                         # Cria o payload com o certificado e o flag
-                        payload = {"cert_str": certificate_data.get('cert_str', ''), "flag": flag}
+                        payload = {"cert_str": certificate, "flag": flag}
                         
                         # Envia o payload para o servidor de rollup
                         response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
                         
                         logger.info(f"Received notice status {response.status_code} body {response.content}")
-                else:
-                    logger.error(f"Certificate data missing 'cert' key for message: {message}")
+                    else:
+                        logger.info("The certificate was already revoked.")
+                        status = "reject"
+                        return status
             else:
                 logger.info("The certificate was not found for revocation.")
         # OPERACOES POSTAR CERTIFICADO

@@ -5,7 +5,7 @@ Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e Ja
 
 ## Requisitos
 
-1. **Cartesi**: É necessário instalar o Cartesi para o funcionamento do projeto. Siga o tutorial disponível em [Cartesi Rollups Installation](https://docs.cartesi.io/cartesi-rollups/1.3/development/installation/) para a instalação.
+1. **Cartesi CLI**: É necessário instalar o Cartesi para o funcionamento do projeto. Siga o tutorial disponível em [Cartesi Rollups Installation](https://docs.cartesi.io/cartesi-rollups/1.3/development/installation/) para a instalação.
 
 2. **OpenSSL**: Você precisará do OpenSSL para gerar e assinar certificados. Caso não tenha utilize o seguinte comando:
 
@@ -17,6 +17,7 @@ Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e Ja
     ```bash
     sudo apt install jq
     ```
+4. **Node.js**: O cartesi CLI ja exige o node na instalação, mas como utilizamos no front-end, fica aqui um reforço
 
 ## Preparando o ambiente
 
@@ -28,33 +29,9 @@ Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e Ja
     openssl genpkey -algorithm RSA -out ./PK/private.key
     ```
 
-2. **Mensagem para Assinatura**: Coloque uma mensagem sem espaços no arquivo localizado em `/INPUT/message.txt`. Exemplo de mensagem:
-
-    ```
-    uma_mensagem_qualquer
-    ```
-
-### Scripts
-
-1. **Geração e Assinatura do Certificado**:
-   
-   Execute o script `certificate_gen.sh` para gerar e assinar o certificado. Este script utiliza a chave privada para criar e assinar o certificado.
-
-    ```bash
-    ./certificate_gen.sh
-    ```
-
-2. **Geração da Mensagem Assinada**:
-   
-   Execute o script `signature_gen.sh` para gerar a assinatura necessária para verificação dentro da dApp.
-
-    ```bash
-    ./signature_gen.sh
-    ```
-
 ## Execução e Teste
 
-1. **Construção e Execução**:
+1. **Construção e Execução do Cartesi**:
    
    Navegue até o diretório `/backend` e execute os seguintes comandos para construir e iniciar o Cartesi:
 
@@ -64,35 +41,43 @@ Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e Ja
     cartesi run
     ```
     - OBS.: Essa parte pode demorar um pouco, ou até dar alguns erros dependendo da sua CPU, tenha paciência e repita os comandos. Tente fechar e abrir sua IDE e/ou terminais novamente.
-2. **Teste**:
+2. **Execução do Front-end**:
+
+    Agora em outro terminal, navegue até o diretório `/front-end` e rode o arquivo `server.js`:
+
+    ```bash
+    cd /front-end
+    node server.js
+    ```
+3. **Testando**:
    
-   Quando o Cartesi estiver rodando abra um novo terminal e execute o script `send_generic.sh` para testar o sistema.
+   Acesse o endereço do front-end: `http://localhost:3000`
+   Você verá as páginas de Geração de certificado, Revogação de certificado e a página Ver Certificado para ver o status atual do certificado (Ativo ou Inativo). 
 
-    ```bash
-    ./send_generic.sh
-    ```
-    Utilize a opção 1 para postar o certificad e a opção 2 para revogar o certificado.
+4. **Geração de certificado**: `advance`
 
-3. **Observe a movimentação da dApp pelo LOG do cartesi**
+    - Nessa página você irá escolher um identificador único para o certificado e escreve-lo na caixa de texto. (exemplo: `meuid`)
+    - Logo depois irá fazer upload da sua chave privada `private.key` anteriormente gerada.
+    - Ao clicar em Enviar, será gerado um certificado e uma assinatura a partir da sua chave e do identificador escrito.
+    - A aplicação, neste momento, irá fazer o envio do certificado para a blockchain (pode demorar alguns segundos)
 
-    Se tudo der certo você verá uma saida no terminal parecida com essa aqui:
+5. **Ver Certificado**: `inspect`
+    - Agora que acabou de gerar e enviar seu certificado e sua assinatura, verifique o estado atual do seu certificado.
+    - Digite o identificador unico do seu certificado na caixa de texto e clique em Buscar
 
-    ![Terminal depois de enviado o certificado](img/terminal_finish.png)
+6. **Revogar Certificado**: `advance`
+    - Agora que ja sabe que seu certificado está na blockchain, caso queira, você pode revoga-lo.
+    - Na página de revogar o certificado você precisará fornecer o identificador do certificado e a sua assinatura.
+    - A assinatura gerada está localizada no subdiretório `/front-end/files/<meuidentificador>/assinatura_base64.txt`.
+    - Faça o upload do arquivo da assinatura e digite o identificador único do certificado
+    - Clique em Revogar e aguarde alguns segundos
+    - Você pode conferir o estado atual do seu certificado retornando à pagina Ver Certificado
 
-4. **Utilize o inspect através do frontend**: Para fazer isso, rode o `app.js` encontrado dentro do diretório `/front-end` através do seguinte comando:
+### Verificação de assinatura
 
-    ```bash
-    node ./front-end/app.js
-    ```
+    Você pode acompanhar durante a revogação, a verificação da assinatura através do terminal da Cartesi, caso gere 2 certificados e tente enviar a assinatura de um com o identificador do outro, verá a seguinte mensagem:
 
-## Inputs tratados
-
-
-1. **Reenviar o mesmo certificado, com a mesma mensagem e assinatura**: Você irá vê na tela de log a mensagem `The certificate was already posted.`, informando que o certificado que o certificado ja foi postado.
-
-2. **Enviar um certificado revogado, com a mesma mensagem e assinatura**: Você verá a mesma mensagem explicada no 1.
-
-3. **E claro, o mais importante, a verificação da assinatura**: Para testar a falha de verificação, você deve acessar o arquivo `send_generic.sh` e descomentar a linha `5` e comentar a linha `4`. A partir disso é so executar o script `send_generic.sh` novamente, passando o 1 como parâmetro.
+    ![Erro de verificação de assinatura](/img/LogErroAssinatura.png)
 
 ## Link do vídeo
 
