@@ -48,7 +48,7 @@ INPUT_STRING=$(jq -n \
   }')
 
 # Exibe a string JSON criada (para debug)
-# echo "Input JSON: $INPUT_STRING"
+echo "Input JSON: $INPUT_STRING"
 
 # Envia o comando Cartesi
 cartesi send generic \

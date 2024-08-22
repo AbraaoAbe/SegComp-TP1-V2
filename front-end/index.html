@@ -161,27 +161,64 @@
             });
         }
 
-        function handleView() {
+        async function handleView() {
             const certSearch = document.getElementById('certSearch').value;
+            const certIdWithoutSpaces = certSearch.replace(/\s/g, '');
+            const url = `http://localhost:8080/inspect/${encodeURIComponent(certIdWithoutSpaces)}`;
 
-            fetch(`/view?certId=${encodeURIComponent(certSearch)}`)
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`Error ${response.status}: ${text}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(result => {
-                    const certDetails = document.getElementById('certDetails');
-                    certDetails.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    alert(`Ocorreu um erro: ${error.message}`);
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
                 });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Error ${response.status}: ${text}`);
+                }
+
+                const result = await response.text();
+
+                if (!result) {
+                    throw new Error('Empty response');
+                } else {
+                    try {
+                        const report = JSON.parse(result).reports[0];
+                        const payloadHex = report.payload;
+                        const hexStringWithoutPrefix = payloadHex.startsWith('0x') ? payloadHex.slice(2) : payloadHex;
+                        const bytes = new Uint8Array(hexStringWithoutPrefix.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                        const decodedString = new TextDecoder().decode(bytes);
+                        console.log('Certificado Encontrado:', decodedString);
+                        const decodedObject = JSON.parse(decodedString);
+
+                         // Substitui o valor da flag por "Status: Ativa"
+                        const formattedCert = decodedObject.cert_str.replace(/\n/g, '<br>');
+                        const status = decodedObject.flag ? 'Status: Ativa' : 'Status: Inativa';
+
+                        // Cria o HTML para exibir os dados
+                        const certDetailsHTML = `
+                            <div>
+                                <h2>Detalhes do Certificado</h2>
+                                <p><strong>Certificado:</strong></p>
+                                <pre>${formattedCert}</pre>
+                                <p><strong>${status}</strong></p>
+                            </div>
+                        `;
+
+                        const certDetails = document.getElementById('certDetails');
+                        certDetails.innerHTML = certDetailsHTML;
+                    } catch (error) {
+                        console.log('Nenhum certificado encontrado.');
+                        console.error('Erro:', error);
+                        alert('Nenhum certificado encontrado.');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert(`Ocorreu um erro: ${error.message}`);
+            }
         }
+
     </script>
 </body>
 </html>
