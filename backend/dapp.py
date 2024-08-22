@@ -84,72 +84,87 @@ def handle_advance(data):
         signature_b64 = parsed_data.get("assinatura")
         message = parsed_data.get("mensagem")
         flag = True
-
+        
         if not all([operation, cert_str, signature_b64, message, flag]):
             raise ValueError("JSON data is missing required fields.")
 
-        # Carrega o certificado
-        cert = load_certificate(cert_str)
-        if not cert:
-            raise ValueError("Failed to load certificate.")
-
-        # Decodifica a assinatura de base64
         signature = base64.b64decode(signature_b64)
-
-        # Verifica a assinatura
-        if not verify_signature(cert, message.encode('utf-8'), signature):
-            status = "reject"
-            logger.info("Signature verification failed.")
-            logger.info("Operation rejected.")
-            return status
-            raise ValueError("Invalid signature. Operation rejected.")
-        else:
-            logger.info("Signature verified.")
-
-        # Executa a operação com base no tipo
-        if operation == "postar_certificado":
-            logger.info("Verifing if the certificate was already posted...")
-            
-            # Carrega certificados locais
-            certificates = load_certificates_from_file()
-            
-            # Verifica se o identificador já existe
-            if message in certificates:
-                logger.info("The certificate was already posted.")
-            else:
-                logger.info("Posting the certificate...")
-                
-                payload = {"message": message, "cert_str": cert_str, "flag": flag}
-                response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
-                
-                logger.info(f"Received notice status {response.status_code} body {response.content}")
-                
-                # Atualiza o arquivo local com o novo certificado
-                certificates[message] = {"cert_str": cert_str, "flag": flag}
-                save_certificates_to_file(certificates)
-
-        elif operation == "revogar_certificado":
+        # Trata a revogação com o certificados locais + assinatura de parametro
+        if operation == "revogar_certificado":
+            flag = False
             logger.info("Revoking the certificate...")
-
+            
+            # Carrega os certificados do arquivo local
             certificates = load_certificates_from_file()
             
-            # Verifica se o identificador existe
+            # Verifica se o identificador da mensagem existe nos certificados
             if message in certificates:
-                # Atualiza o flag do certificado para false
-                certificates[message]['flag'] = False
-                
-                # Salva a alteração no arquivo local
-                save_certificates_to_file(certificates)
-                payload = {"message": message, "cert_str": certificates[message]['cert_str'], "flag": False}
-                response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
-                
-                logger.info(f"Received notice status {response.status_code} body {response.content}")
+                certificate_data = certificates[message]
+                logger.info(f"Certificate data: {certificate_data}")
+                # Verifica se a chave 'cert' existe no dicionário de dados do certificado
+                if 'cert' in certificate_data:
+                    certificate = certificate_data['cert']
+                    logger.info(f"Certificate: {certificate}")
+                    # Verifica a assinatura
+                    if not verify_signature(certificate, message.encode('utf-8'), signature):
+                        status = "reject"
+                        logger.info("Signature verification failed.")
+                        logger.info("Operation rejected.")
+                        return status
+                    else:
+                        # Atualiza o flag do certificado para false
+                        certificates[message]['flag'] = flag
+                        
+                        # Salva a alteração no arquivo local
+                        save_certificates_to_file(certificates)
+                        
+                        # Cria o payload com o certificado e o flag
+                        payload = {"cert_str": certificate_data.get('cert_str', ''), "flag": flag}
+                        
+                        # Envia o payload para o servidor de rollup
+                        response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
+                        
+                        logger.info(f"Received notice status {response.status_code} body {response.content}")
+                else:
+                    logger.error(f"Certificate data missing 'cert' key for message: {message}")
             else:
                 logger.info("The certificate was not found for revocation.")
-
+        # OPERACOES POSTAR CERTIFICADO
+        elif operation == "postar_certificado":
+            # Carrega o certificado
+            cert = load_certificate(cert_str)
+            if not cert:
+                raise ValueError("Failed to load certificate.")
+            # Verifica a assinatura
+            if not verify_signature(cert, message.encode('utf-8'), signature):
+                status = "reject"
+                logger.info("Signature verification failed.")
+                logger.info("Operation rejected.")
+                return status
+                raise ValueError("Invalid signature. Operation rejected.")
+            else:
+                logger.info("Signature verified.")
+                # Carrega certificados locais
+                certificates = load_certificates_from_file()
+                
+                # Verifica se o identificador já existe
+                if message in certificates:
+                    logger.info("The certificate was already posted.")
+                    status = "reject"
+                    return status
+                else:
+                    logger.info("Posting the certificate...")
+                    
+                    payload = {"cert_str": cert_str, "flag": flag}
+                    response = requests.post(rollup_server + "/notice", json={"payload": str2hex(json.dumps(payload))})
+                    
+                    logger.info(f"Received notice status {response.status_code} body {response.content}")
+                    
+                    # Atualiza o arquivo local com o novo certificado
+                    certificates[message] = {"cert_str": cert_str, "flag": flag}
+                    save_certificates_to_file(certificates)
         else:
             raise ValueError(f"Invalid operation: {operation}")
-
     except Exception as e:
         status = "reject"
         msg = f"Error processing data {e}"
@@ -176,13 +191,11 @@ def handle_inspect(data):
             return 'reject'
 
         certificates = load_certificates_from_file()
-
         # Verifica se a message existe no dicionário de certificados
         if input_data in certificates:
             cert_info = certificates[input_data]
             if not cert_info['flag']:
                 logger.info("The certificate was revoked!!")
-                return 'reject'
             logger.info(f"a flag é: {cert_info['flag']}")
         else:
             logger.info("The certificate was not found!!")
