@@ -79,7 +79,7 @@ const requestHandler = (req, res) => {
   
       req.on('end', () => {
           const data = JSON.parse(body);
-          console.log("Dados recebidos para revogar:", data);
+          // console.log("Dados recebidos para revogar:", data);
           
           // Acessa os valores corretamente a partir do JSON recebido
           const certId = data.certId;
