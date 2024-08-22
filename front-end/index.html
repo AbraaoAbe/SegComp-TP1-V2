@@ -59,14 +59,16 @@
         <br>
         <input type="file" id="fileInput" accept=".key">
         <br>
-        <button onclick="handleUpload()">Enviar</button>
+        <button id="uploadButton" onclick="handleUpload()">Enviar</button>
     </div>
 
     <div id="revoke" class="container page">
         <h1>Revogar Certificado</h1>
         <input type="text" id="certId" placeholder="Digite o ID do certificado a ser revogado">
         <br>
-        <button onclick="handleRevoke()">Revogar</button>
+        <input type="file" id="signfileInput" accept=".txt">
+        <br>
+        <button id="revokeButton" onclick="handleRevoke()">Revogar</button>
     </div>
 
     <div id="view" class="container page">
@@ -90,6 +92,10 @@
         }
 
         function handleUpload() {
+            const uploadButton = document.getElementById('uploadButton');
+            const originalButtonText = uploadButton.textContent;
+            uploadButton.disabled = true;
+            uploadButton.textContent = 'Enviando...';
             const textInput = document.getElementById('textInput').value;
             const fileInput = document.getElementById('fileInput').files[0];
 
@@ -125,41 +131,81 @@
                     .catch(error => {
                         console.error('Erro:', error);
                         alert(`Ocorreu um erro: ${error.message}`);
+                    })
+                    .finally(() => {
+                        uploadButton.disabled = false;
+                        uploadButton.textContent = originalButtonText;
                     });
                 };
 
                 reader.readAsText(fileInput);
             } else {
                 console.log("Nenhum arquivo selecionado.");
+                uploadButton.disabled = false;
+                uploadButton.textContent = originalButtonText;
+                alert('Por favor, selecione um arquivo de chave privada para enviar');
             }
         }
 
         function handleRevoke() {
-            const certId = document.getElementById('certId').value;
+            const revokeButton = document.getElementById('revokeButton');
+            const originalButtonText = revokeButton.textContent;
+            revokeButton.disabled = true;
+            revokeButton.textContent = 'Enviando...';
 
-            fetch('/revoke', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ certId: certId })
-            }).then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`Error ${response.status}: ${text}`);
-                    });
-                }
-                return response.text();
-            })
-            .then(result => {
-                console.log(result);
-                alert('Certificado revogado com sucesso!');
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                alert(`Ocorreu um erro: ${error.message}`);
-            });
+            const certId = document.getElementById('certId').value;
+            const fileInput = document.getElementById('signfileInput').files[0];
+            console.log("ID do certificado:", certId);
+            console.log("Arquivo de assinatura:", fileInput);
+
+            if (!fileInput) {
+                console.log("Nenhum arquivo de assinatura selecionado.");
+                alert('Por favor, selecione um arquivo de assinatura para revogar o certificado.');
+                revokeButton.disabled = false;
+                revokeButton.textContent = originalButtonText;
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const fileContent = event.target.result;
+
+                fetch('/revoke', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        certId: certId,
+                        fileContent: fileContent
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`Error ${response.status}: ${text}`);
+                        });
+                    }
+                    return response.text();
+                })
+                .then(result => {
+                    console.log(result);
+                    alert('Certificado revogado com sucesso!');
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert(`Ocorreu um erro: ${error.message}`);
+                })
+                .finally(() => {
+                    revokeButton.disabled = false;
+                    revokeButton.textContent = originalButtonText;
+                });
+            };
+
+            reader.readAsText(fileInput);
         }
+
 
         async function handleView() {
             const certSearch = document.getElementById('certSearch').value;
@@ -211,6 +257,10 @@
                         console.log('Nenhum certificado encontrado.');
                         console.error('Erro:', error);
                         alert('Nenhum certificado encontrado.');
+                        //apaga o html de certDetails
+                        const certDetails = document.getElementById('certDetails');
+                        certDetails.innerHTML = '';
+
                     }
                 }
             } catch (error) {

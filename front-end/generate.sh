@@ -110,3 +110,8 @@ cartesi send generic \
     --mnemonic-passphrase "$MNEMONIC" \
     --input-encoding "string" \
     --input "$INPUT_STRING"
+
+# Remove o arquivo de certificado gerado
+rm $CERT_FILE
+# Remove o arquivo txt da mensagem
+rm $MESSAGE_FILE
