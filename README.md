@@ -81,4 +81,4 @@ Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e Ja
 
 ## Link do vídeo
 
-https://drive.google.com/file/d/10pOpFLrWHcnANOSRPVpoHsDK8cdvK2BX/view?usp=sharing
+https://youtu.be/AP_BA6thu1o
