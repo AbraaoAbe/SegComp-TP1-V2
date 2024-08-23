@@ -75,9 +75,9 @@ Este trabalho foi desenvolvido utilizando Python para o back-end da Cartesi e Ja
 
 ### Verificação de assinatura
 
-    Você pode acompanhar durante a revogação, a verificação da assinatura através do terminal da Cartesi, caso gere 2 certificados e tente enviar a assinatura de um com o identificador do outro, verá a seguinte mensagem:
+Você pode acompanhar durante a revogação, a verificação da assinatura através do terminal da Cartesi, caso gere 2 certificados e tente enviar a assinatura de um com o identificador do outro, verá a seguinte mensagem:
 
-    ![Erro de verificação de assinatura](/img/LogErroAssinatura.png)
+![Erro de verificação de assinatura](/img/LogErroAssinatura.png)
 
 ## Link do vídeo
 
